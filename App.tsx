@@ -4,7 +4,7 @@ import {
   Globe, ChevronDown, Download, Palette, Image as ImageIcon, 
   Settings, Grid, LayoutTemplate, X, AlertCircle, 
   Zap, ShieldCheck, Check, ArrowLeft, Smartphone, Monitor, 
-  QrCode, Lock, Mail, Phone, AlignLeft, User, MapPin, Music, Wifi, Video, FileText, Share2, MessageCircle, Contact, Upload
+  QrCode, Lock, Mail, Phone, AlignLeft, User, MapPin, Music, Wifi, Video, FileText, Share2, MessageCircle, Contact, Upload, Maximize, Move
 } from 'lucide-react';
 import QRCodeStyling from 'qr-code-styling';
 
@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'logo' | 'templates'>('content');
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   
   const [config, setConfig] = useState<QRConfig>({
     content: '',
@@ -50,6 +51,8 @@ const App: React.FC = () => {
     isGradient: false,
     gradientColor: '#444444',
     logo: '',
+    logoSize: 0.4,
+    logoMargin: 5,
     resolution: 1000,
   });
   
@@ -64,6 +67,13 @@ const App: React.FC = () => {
     qrOptions: { typeNumber: 0, mode: "Byte", errorCorrectionLevel: "Q" },
     imageOptions: { hideBackgroundDots: true, imageSize: 0.4, margin: 5 },
   }));
+
+  // Handle screen resize
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (currentView === 'home' && qrRef.current) {
@@ -193,7 +203,12 @@ const App: React.FC = () => {
       backgroundOptions: { color: config.bgColor },
       cornersSquareOptions: { type: config.eyeFrameShape as any, color: config.fgColor },
       cornersDotOptions: { type: config.eyeBallShape as any, color: config.fgColor },
-      image: config.logo
+      image: config.logo,
+      imageOptions: {
+        hideBackgroundDots: true,
+        imageSize: config.logoSize,
+        margin: config.logoMargin
+      }
     });
   };
 
@@ -226,7 +241,7 @@ const App: React.FC = () => {
       setFormData({ url: template.content });
       setHasGenerated(true);
     }
-    setActiveTab('design');
+    if (!isDesktop) setActiveTab('design');
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,6 +266,7 @@ const App: React.FC = () => {
       errors: { invalidUrl: "URL inválida", invalidPhoneLength: "Número incompleto", invalidEmail: "E-mail inválido", invalidWhatsapp: "Formato inválido (ex: 5511999999999)" },
       placeholders: { smsPhone: "Número do Celular", smsSubject: "Assunto (Opcional)", smsBody: "Corpo da Mensagem" },
       tabs: { content: "Conteúdo", design: "Design", logo: "Logotipo", templates: "Modelos" },
+      logoControls: { size: "Tamanho do Logo", margin: "Margem interna" },
       gradientError: "Gradientes não são suportados nos formatos EPS e PDF. Use cores sólidas para esses formatos."
     },
     en: {
@@ -262,6 +278,7 @@ const App: React.FC = () => {
       errors: { invalidUrl: "Invalid URL", invalidPhoneLength: "Incomplete number", invalidEmail: "Invalid Email", invalidWhatsapp: "Invalid format (ex: 5511999999999)" },
       placeholders: { smsPhone: "Phone Number", smsSubject: "Subject (Optional)", smsBody: "Message Body" },
       tabs: { content: "Content", design: "Design", logo: "Logo", templates: "Templates" },
+      logoControls: { size: "Logo Size", margin: "Inner Margin" },
       gradientError: "Gradients are not supported in EPS and PDF formats. Use solid colors for these formats."
     },
     es: {
@@ -273,6 +290,7 @@ const App: React.FC = () => {
       errors: { invalidUrl: "URL inválida", invalidPhoneLength: "Número incompleto", invalidEmail: "Email inválido", invalidWhatsapp: "Formato inválido (ej: 5511999999999)" },
       placeholders: { smsPhone: "Número de Teléfono", smsSubject: "Asunto (Opcional)", smsBody: "Cuerpo del Mensaje" },
       tabs: { content: "Contenido", design: "Diseño", logo: "Logotipo", templates: "Plantillas" },
+      logoControls: { size: "Tamaño del Logo", margin: "Margen interno" },
       gradientError: "Los gradientes no son compatibles con os formatos EPS e PDF. Utilice colores sólidos para estos formatos."
     },
     fr: {
@@ -284,7 +302,8 @@ const App: React.FC = () => {
       errors: { invalidUrl: "URL invalide", invalidPhoneLength: "Numéro incomplet", invalidEmail: "Email invalide", invalidWhatsapp: "Format invalide (ex: 5511999999999)" },
       placeholders: { smsPhone: "Numéro de Téléphone", smsSubject: "Sujet (Optionnel)", smsBody: "Corps du Message" },
       tabs: { content: "Contenu", design: "Design", logo: "Logo", templates: "Modèles" },
-      gradientError: "Les dégradés ne sont pas pris en charge dans les formats EPS et PDF. Utilisez des couleurs unies pour ces formats."
+      logoControls: { size: "Taille du Logo", margin: "Marge interne" },
+      gradientError: "Les dégradés ne sont pas pris en charge dans les formats EPS et PDF. Utilisez des couleurs unies pour ces foramts."
     }
   };
 
@@ -297,6 +316,267 @@ const App: React.FC = () => {
     }
     qrCode.download({ name: 'qrcode-pro-export', extension: ext as any });
   };
+
+  const renderContentSection = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+        {CONTENT_TYPES.map((item) => (
+          <button 
+            key={item.type} 
+            onClick={() => { setActiveType(item.type); setHasGenerated(false); }} 
+            className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${activeType === item.type ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 text-slate-400'}`}
+          >
+            {item.icon}
+            <span className="text-[9px] font-black mt-2 uppercase truncate w-full text-center">{t.typeLabels[item.labelKey] || item.labelKey}</span>
+          </button>
+        ))}
+      </div>
+      
+      <div className="space-y-4 pt-4 border-t border-slate-50">
+        {(activeType === 'URL' || activeType === 'MP3' || activeType === 'VIDEO' || activeType === 'PDF' || activeType === 'SOCIAL') && (
+          <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="https://..." value={formData.url || ''} onChange={e => setFormData({ ...formData, url: e.target.value })} />
+        )}
+        
+        {activeType === 'WHATSAPP' && (
+          <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Código do país + DDD + Número" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+        )}
+
+        {activeType === 'PHONE' && (
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="phoneSubtype" 
+                  checked={phoneSubtype === 'celular'} 
+                  onChange={() => { setPhoneSubtype('celular'); setFormData({...formData, phone: applyPhoneMask(formData.phone || '', 'celular')}); }} 
+                />
+                <span className="text-sm font-bold">Celular</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="phoneSubtype" 
+                  checked={phoneSubtype === 'fixo'} 
+                  onChange={() => { setPhoneSubtype('fixo'); setFormData({...formData, phone: applyPhoneMask(formData.phone || '', 'fixo')}); }} 
+                />
+                <span className="text-sm font-bold">Telefone Fixo</span>
+              </label>
+            </div>
+            <input 
+              type="text" 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono" 
+              placeholder={phoneSubtype === 'celular' ? "(XX) XXXXX-XXXX" : "(XX) XXXX-XXXX"}
+              value={formData.phone || ''} 
+              onChange={handlePhoneChange} 
+            />
+          </div>
+        )}
+
+        {activeType === 'TEXT' && (
+          <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none min-h-[120px] focus:ring-2 focus:ring-indigo-500/20" placeholder="Digite seu texto aqui..." value={formData.text || ''} onChange={e => setFormData({ ...formData, text: e.target.value })} />
+        )}
+
+        {activeType === 'EMAIL' && (
+          <input type="email" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="exemplo@email.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+        )}
+
+        {activeType === 'SMS' && (
+          <div className="space-y-4">
+             <input 
+              type="text" 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" 
+              placeholder={t.placeholders.smsPhone} 
+              value={formData.phone || ''} 
+              onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+             />
+             <input 
+              type="text" 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" 
+              placeholder={t.placeholders.smsSubject} 
+              value={formData.subject || ''} 
+              onChange={e => setFormData({ ...formData, subject: e.target.value })} 
+             />
+             <textarea 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none min-h-[100px] focus:ring-2 focus:ring-indigo-500/20" 
+              placeholder={t.placeholders.smsBody} 
+              value={formData.body || ''} 
+              onChange={e => setFormData({ ...formData, body: e.target.value })} 
+             />
+          </div>
+        )}
+
+        {activeType === 'WIFI' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="SSID (Nome da rede)" value={formData.ssid || ''} onChange={e => setFormData({ ...formData, ssid: e.target.value })} />
+            <input type="password" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Senha" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+            <select className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" value={formData.encryption || 'WPA'} onChange={e => setFormData({ ...formData, encryption: e.target.value })}>
+              <option value="WPA">WPA/WPA2</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">Sem senha</option>
+            </select>
+          </div>
+        )}
+
+        {activeType === 'LOCATION' && (
+          <div className="grid grid-cols-2 gap-4">
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Latitude" value={formData.lat || ''} onChange={e => setFormData({ ...formData, lat: e.target.value })} />
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Longitude" value={formData.lng || ''} onChange={e => setFormData({ ...formData, lng: e.target.value })} />
+          </div>
+        )}
+
+        {(activeType === 'VCARD' || activeType === 'MECARD') && (
+          <div className="grid grid-cols-2 gap-4">
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Nome" value={formData.firstName || ''} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Sobrenome" value={formData.lastName || ''} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
+            <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Celular" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+            <input type="email" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="E-mail" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+          </div>
+        )}
+
+        {validationError && <div className="text-[10px] font-bold text-red-500 flex items-center gap-1"><AlertCircle size={14}/> {t.errors[validationError]}</div>}
+      </div>
+    </div>
+  );
+
+  const renderDesignSection = () => (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Formato dos Pontos</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['square', 'dots', 'rounded', 'extra-rounded', 'classy', 'classy-rounded'] as const).map(s => (
+              <button key={s} onClick={() => setConfig({...config, bodyShape: s})} className={`p-2 rounded-xl border text-[10px] font-bold capitalize ${config.bodyShape === s ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100'}`}>{s.replace('-', ' ')}</button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-4">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cores</label>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <span className="block text-[9px] font-bold mb-1">Cor Principal</span>
+              <input type="color" value={config.fgColor} onChange={e => setConfig({...config, fgColor: e.target.value})} className="w-full h-12 rounded-xl border-none cursor-pointer" />
+            </div>
+            <div className="flex-1">
+              <span className="block text-[9px] font-bold mb-1">Fundo</span>
+              <input type="color" value={config.bgColor} onChange={e => setConfig({...config, bgColor: e.target.value})} className="w-full h-12 rounded-xl border-none cursor-pointer" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={config.isGradient} onChange={e => setConfig({...config, isGradient: e.target.checked})} className="rounded text-indigo-600" />
+            <span className="text-xs font-bold">Usar Gradiente</span>
+            {config.isGradient && <input type="color" value={config.gradientColor} onChange={e => setConfig({...config, gradientColor: e.target.value})} className="h-6 w-12 rounded" />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLogoSection = () => (
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Escolher Logotipo</label>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
+          <button 
+            title="Limpar Logotipo"
+            onClick={() => setConfig({...config, logo: ''})} 
+            className={`p-4 rounded-2xl border flex items-center justify-center transition-all ${!config.logo ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-100 hover:border-slate-200'}`}
+          >
+            <X size={20} className="text-slate-400" />
+          </button>
+          
+          <button 
+            title="Fazer Upload de Logo"
+            onClick={() => fileInputRef.current?.click()} 
+            className="p-4 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center justify-center gap-1 hover:bg-indigo-50 hover:border-indigo-300 transition-all text-indigo-600 group"
+          >
+            <Upload size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              hidden 
+              accept="image/png, image/jpeg, image/jpg, image/svg+xml" 
+              onChange={handleLogoUpload} 
+            />
+          </button>
+
+          {LOGO_OPTIONS.map(logo => (
+            <button key={logo.id} onClick={() => setConfig({...config, logo: logo.url})} className={`p-2 rounded-2xl border flex items-center justify-center transition-all ${config.logo === logo.url ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-100 hover:border-slate-200'}`}>
+              <img src={logo.url} alt={logo.id} className="w-8 h-8 object-contain" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {config.logo && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-100">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Maximize size={14} /> {t.logoControls.size}
+              </label>
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{(config.logoSize * 100).toFixed(0)}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="0.1" 
+              max="0.5" 
+              step="0.01" 
+              value={config.logoSize} 
+              onChange={(e) => setConfig({...config, logoSize: parseFloat(e.target.value)})}
+              className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Move size={14} /> {t.logoControls.margin}
+              </label>
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{config.logoMargin}px</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" 
+              max="20" 
+              step="1" 
+              value={config.logoMargin} 
+              onChange={(e) => setConfig({...config, logoMargin: parseInt(e.target.value)})}
+              className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTemplatesSection = () => (
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-y-8 gap-x-6">
+      {TEMPLATES.map((tmpl, idx) => (
+        <div key={idx} className="flex flex-col items-center gap-3">
+          <button 
+            onClick={() => handleApplyTemplate(tmpl)}
+            className="group relative aspect-square w-full rounded-2xl overflow-hidden border border-slate-200 hover:border-indigo-500 transition-all p-2 bg-white flex items-center justify-center"
+          >
+            <QrCode 
+              className="absolute inset-0 w-full h-full p-2 transition-transform duration-500 group-hover:scale-105" 
+              style={{ color: tmpl.fgColor, opacity: 0.15 }}
+            />
+            {tmpl.logo && (
+              <div className="relative z-20 w-8 h-8 flex items-center justify-center">
+                <img src={tmpl.logo} alt="logo preview" className="w-full h-full object-contain" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-indigo-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30">
+              <span className="text-white text-[10px] font-black uppercase tracking-widest">Aplicar</span>
+            </div>
+          </button>
+          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tight">{(tmpl as any).label}</span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <SecurityLayer>
@@ -335,252 +615,67 @@ const App: React.FC = () => {
           {currentView === 'home' ? (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 space-y-6">
-                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="flex border-b border-slate-100 bg-slate-50/50">
-                      {(['content', 'design', 'logo', 'templates'] as const).map((tab) => (
-                        <button 
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
-                          {t.tabs[tab]}
-                        </button>
-                      ))}
+                {/* Left side: Main configuration */}
+                <div className="lg:col-span-8 space-y-8">
+                  {isDesktop ? (
+                    /* Desktop Layout: Stacked Cards */
+                    <>
+                      <section className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">{t.tabs.content}</h2>
+                        </div>
+                        <div className="p-8">{renderContentSection()}</div>
+                      </section>
+
+                      <section className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">{t.tabs.design}</h2>
+                        </div>
+                        <div className="p-8">{renderDesignSection()}</div>
+                      </section>
+
+                      <section className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">{t.tabs.logo}</h2>
+                        </div>
+                        <div className="p-8">{renderLogoSection()}</div>
+                      </section>
+
+                      <section className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/30">
+                          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">{t.tabs.templates}</h2>
+                        </div>
+                        <div className="p-8">{renderTemplatesSection()}</div>
+                      </section>
+                    </>
+                  ) : (
+                    /* Mobile Layout: Tabbed Card */
+                    <div className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                      <div className="flex border-b border-slate-100 bg-slate-50/50 overflow-x-auto no-scrollbar">
+                        {(['content', 'design', 'logo', 'templates'] as const).map((tab) => (
+                          <button 
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex-1 min-w-[100px] py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            {t.tabs[tab]}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="p-6">
+                        {activeTab === 'content' && renderContentSection()}
+                        {activeTab === 'design' && renderDesignSection()}
+                        {activeTab === 'logo' && renderLogoSection()}
+                        {activeTab === 'templates' && renderTemplatesSection()}
+                      </div>
                     </div>
-
-                    <div className="p-8">
-                      {activeTab === 'content' && (
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                            {CONTENT_TYPES.map((item) => (
-                              <button 
-                                key={item.type} 
-                                onClick={() => { setActiveType(item.type); setHasGenerated(false); }} 
-                                className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${activeType === item.type ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 text-slate-400'}`}
-                              >
-                                {item.icon}
-                                <span className="text-[9px] font-black mt-2 uppercase truncate w-full text-center">{t.typeLabels[item.labelKey] || item.labelKey}</span>
-                              </button>
-                            ))}
-                          </div>
-                          
-                          <div className="space-y-4 pt-4 border-t border-slate-50">
-                            {(activeType === 'URL' || activeType === 'MP3' || activeType === 'VIDEO' || activeType === 'PDF' || activeType === 'SOCIAL') && (
-                              <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="https://..." value={formData.url || ''} onChange={e => setFormData({ ...formData, url: e.target.value })} />
-                            )}
-                            
-                            {activeType === 'WHATSAPP' && (
-                              <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Código do país + DDD + Número" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                            )}
-
-                            {activeType === 'PHONE' && (
-                              <div className="space-y-4">
-                                <div className="flex gap-4">
-                                  <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                      type="radio" 
-                                      name="phoneSubtype" 
-                                      checked={phoneSubtype === 'celular'} 
-                                      onChange={() => { setPhoneSubtype('celular'); setFormData({...formData, phone: applyPhoneMask(formData.phone || '', 'celular')}); }} 
-                                    />
-                                    <span className="text-sm font-bold">Celular</span>
-                                  </label>
-                                  <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                      type="radio" 
-                                      name="phoneSubtype" 
-                                      checked={phoneSubtype === 'fixo'} 
-                                      onChange={() => { setPhoneSubtype('fixo'); setFormData({...formData, phone: applyPhoneMask(formData.phone || '', 'fixo')}); }} 
-                                    />
-                                    <span className="text-sm font-bold">Telefone Fixo</span>
-                                  </label>
-                                </div>
-                                <input 
-                                  type="text" 
-                                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono" 
-                                  placeholder={phoneSubtype === 'celular' ? "(XX) XXXXX-XXXX" : "(XX) XXXX-XXXX"}
-                                  value={formData.phone || ''} 
-                                  onChange={handlePhoneChange} 
-                                />
-                              </div>
-                            )}
-
-                            {activeType === 'TEXT' && (
-                              <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none min-h-[120px] focus:ring-2 focus:ring-indigo-500/20" placeholder="Digite seu texto aqui..." value={formData.text || ''} onChange={e => setFormData({ ...formData, text: e.target.value })} />
-                            )}
-
-                            {activeType === 'EMAIL' && (
-                              <input type="email" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="exemplo@email.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                            )}
-
-                            {activeType === 'SMS' && (
-                              <div className="space-y-4">
-                                 <input 
-                                  type="text" 
-                                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" 
-                                  placeholder={t.placeholders.smsPhone} 
-                                  value={formData.phone || ''} 
-                                  onChange={e => setFormData({ ...formData, phone: e.target.value })} 
-                                 />
-                                 <input 
-                                  type="text" 
-                                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20" 
-                                  placeholder={t.placeholders.smsSubject} 
-                                  value={formData.subject || ''} 
-                                  onChange={e => setFormData({ ...formData, subject: e.target.value })} 
-                                 />
-                                 <textarea 
-                                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none min-h-[100px] focus:ring-2 focus:ring-indigo-500/20" 
-                                  placeholder={t.placeholders.smsBody} 
-                                  value={formData.body || ''} 
-                                  onChange={e => setFormData({ ...formData, body: e.target.value })} 
-                                 />
-                              </div>
-                            )}
-
-                            {activeType === 'WIFI' && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="SSID (Nome da rede)" value={formData.ssid || ''} onChange={e => setFormData({ ...formData, ssid: e.target.value })} />
-                                <input type="password" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Senha" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-                                <select className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" value={formData.encryption || 'WPA'} onChange={e => setFormData({ ...formData, encryption: e.target.value })}>
-                                  <option value="WPA">WPA/WPA2</option>
-                                  <option value="WEP">WEP</option>
-                                  <option value="nopass">Sem senha</option>
-                                </select>
-                              </div>
-                            )}
-
-                            {activeType === 'LOCATION' && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Latitude" value={formData.lat || ''} onChange={e => setFormData({ ...formData, lat: e.target.value })} />
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Longitude" value={formData.lng || ''} onChange={e => setFormData({ ...formData, lng: e.target.value })} />
-                              </div>
-                            )}
-
-                            {(activeType === 'VCARD' || activeType === 'MECARD') && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Nome" value={formData.firstName || ''} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Sobrenome" value={formData.lastName || ''} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
-                                <input type="text" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Celular" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                                <input type="email" className="p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="E-mail" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                              </div>
-                            )}
-
-                            {validationError && <div className="text-[10px] font-bold text-red-500 flex items-center gap-1"><AlertCircle size={14}/> {t.errors[validationError]}</div>}
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'design' && (
-                        <div className="space-y-8">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Formato dos Pontos</label>
-                              <div className="grid grid-cols-3 gap-2">
-                                {(['square', 'dots', 'rounded', 'extra-rounded', 'classy', 'classy-rounded'] as const).map(s => (
-                                  <button key={s} onClick={() => setConfig({...config, bodyShape: s})} className={`p-2 rounded-xl border text-[10px] font-bold capitalize ${config.bodyShape === s ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100'}`}>{s.replace('-', ' ')}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="space-y-4">
-                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cores</label>
-                              <div className="flex gap-4">
-                                <div className="flex-1">
-                                  <span className="block text-[9px] font-bold mb-1">Cor Principal</span>
-                                  <input type="color" value={config.fgColor} onChange={e => setConfig({...config, fgColor: e.target.value})} className="w-full h-12 rounded-xl border-none cursor-pointer" />
-                                </div>
-                                <div className="flex-1">
-                                  <span className="block text-[9px] font-bold mb-1">Fundo</span>
-                                  <input type="color" value={config.bgColor} onChange={e => setConfig({...config, bgColor: e.target.value})} className="w-full h-12 rounded-xl border-none cursor-pointer" />
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input type="checkbox" checked={config.isGradient} onChange={e => setConfig({...config, isGradient: e.target.checked})} className="rounded text-indigo-600" />
-                                <span className="text-xs font-bold">Usar Gradiente</span>
-                                {config.isGradient && <input type="color" value={config.gradientColor} onChange={e => setConfig({...config, gradientColor: e.target.value})} className="h-6 w-12 rounded" />}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'logo' && (
-                        <div className="space-y-6">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adicionar Logotipo</label>
-                          <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-                            <button 
-                              title="Limpar Logotipo"
-                              onClick={() => setConfig({...config, logo: ''})} 
-                              className={`p-4 rounded-2xl border flex items-center justify-center transition-all ${!config.logo ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-100 hover:border-slate-200'}`}
-                            >
-                              <X size={20} className="text-slate-400" />
-                            </button>
-                            
-                            <button 
-                              title="Fazer Upload de Logo"
-                              onClick={() => fileInputRef.current?.click()} 
-                              className="p-4 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center justify-center gap-1 hover:bg-indigo-50 hover:border-indigo-300 transition-all text-indigo-600 group"
-                            >
-                              <Upload size={20} className="group-hover:-translate-y-0.5 transition-transform" />
-                              <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
-                              <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                hidden 
-                                accept="image/png, image/jpeg, image/jpg, image/svg+xml" 
-                                onChange={handleLogoUpload} 
-                              />
-                            </button>
-
-                            {LOGO_OPTIONS.map(logo => (
-                              <button key={logo.id} onClick={() => setConfig({...config, logo: logo.url})} className={`p-2 rounded-2xl border flex items-center justify-center transition-all ${config.logo === logo.url ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-100 hover:border-slate-200'}`}>
-                                <img src={logo.url} alt={logo.id} className="w-8 h-8 object-contain" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'templates' && (
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-y-8 gap-x-6">
-                          {TEMPLATES.map((tmpl, idx) => (
-                            <div key={idx} className="flex flex-col items-center gap-3">
-                              <button 
-                                onClick={() => handleApplyTemplate(tmpl)}
-                                className="group relative aspect-square w-full rounded-2xl overflow-hidden border border-slate-200 hover:border-indigo-500 transition-all p-2 bg-white flex items-center justify-center"
-                              >
-                                {/* Simulated QR Code watermark behind logo */}
-                                <QrCode 
-                                  className="absolute inset-0 w-full h-full p-2 transition-transform duration-500 group-hover:scale-105" 
-                                  style={{ color: tmpl.fgColor, opacity: 0.15 }}
-                                />
-                                
-                                {tmpl.logo && (
-                                  <div className="relative z-20 w-8 h-8 flex items-center justify-center">
-                                    <img 
-                                      src={tmpl.logo} 
-                                      alt="logo preview" 
-                                      className="w-full h-full object-contain" 
-                                    />
-                                  </div>
-                                )}
-                                
-                                <div className="absolute inset-0 bg-indigo-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30">
-                                  <span className="text-white text-[10px] font-black uppercase tracking-widest">Aplicar</span>
-                                </div>
-                              </button>
-                              <span className="text-[11px] font-black text-slate-400 uppercase tracking-tight">{(tmpl as any).label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
 
+                {/* Right side: Preview (Sticky) */}
                 <div className="lg:col-span-4">
-                  <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-200 sticky top-24 flex flex-col items-center">
+                  <div className="bg-white p-6 rounded-[32px] shadow-xl border border-slate-200 sticky top-24 flex flex-col items-center">
                     <div className="relative mb-8 p-4 bg-white rounded-2xl border border-slate-100 shadow-inner">
                       <div ref={qrRef}></div>
                     </div>
@@ -641,7 +736,7 @@ const App: React.FC = () => {
                 onClick={() => setCurrentView('home')}
                 className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-all bg-indigo-50 px-4 py-2 rounded-xl"
               >
-                <ArrowLeft size={16} /> Voltar para o Gerador
+                <ArrowLeft size={16} /> {t.back}
               </button>
               <FaqSection />
             </div>
@@ -651,7 +746,7 @@ const App: React.FC = () => {
                 onClick={() => setCurrentView('home')}
                 className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-all bg-indigo-50 px-4 py-2 rounded-xl"
               >
-                <ArrowLeft size={16} /> Voltar para o Gerador
+                <ArrowLeft size={16} /> {t.back}
               </button>
               <TermsSection />
             </div>
@@ -661,7 +756,7 @@ const App: React.FC = () => {
                 onClick={() => setCurrentView('home')}
                 className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-all bg-indigo-50 px-4 py-2 rounded-xl"
               >
-                <ArrowLeft size={16} /> Voltar para o Gerador
+                <ArrowLeft size={16} /> {t.back}
               </button>
               <PrivacySection />
             </div>
@@ -671,7 +766,7 @@ const App: React.FC = () => {
                 onClick={() => setCurrentView('home')}
                 className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-all bg-indigo-50 px-4 py-2 rounded-xl"
               >
-                <ArrowLeft size={16} /> Voltar para o Gerador
+                <ArrowLeft size={16} /> {t.back}
               </button>
               <CookiesSection />
             </div>

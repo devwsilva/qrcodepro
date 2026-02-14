@@ -21,6 +21,8 @@ export interface QRConfig {
   isGradient: boolean;
   gradientColor?: string;
   logo?: string;
+  logoSize: number;
+  logoMargin: number;
   resolution: number;
 }
 
